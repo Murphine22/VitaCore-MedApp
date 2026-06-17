@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-900 antialiased dark:bg-ink-950 dark:text-ink-100;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-brand-400/40;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-200 dark:bg-ink-800;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-400/60;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-ink-200/70 bg-white/80 shadow-soft backdrop-blur-sm dark:border-ink-800/70 dark:bg-ink-900/60;
+  }
+
+  .glass {
+    @apply border border-white/20 bg-white/10 backdrop-blur-xl;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/60 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-glow hover:from-brand-400 hover:to-brand-500 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn bg-ink-100 text-ink-700 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-100 dark:hover:bg-ink-700;
+  }
+  .btn-danger {
+    @apply btn bg-red-500/10 text-red-600 hover:bg-red-500/20 dark:text-red-400;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-700/80 dark:text-ink-200/70;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-ink-700 transition-all hover:bg-ink-100 hover:text-ink-900 dark:text-ink-200 dark:hover:bg-ink-800/70 dark:hover:text-white;
+  }
+  .nav-link-active {
+    @apply bg-gradient-to-r from-brand-500/15 to-brand-400/5 text-brand-700 dark:text-brand-300;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-400 via-brand-500 to-cyan-500 bg-clip-text text-transparent;
+  }
+}
+
+/* Animated aurora background blobs */
+.aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  width: 40rem;
+  height: 40rem;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.35;
+}
+.aurora::before {
+  background: radial-gradient(circle at center, #22d3ee, transparent 60%);
+  top: -10rem;
+  left: -8rem;
+  animation: float 8s ease-in-out infinite;
+}
+.aurora::after {
+  background: radial-gradient(circle at center, #6366f1, transparent 60%);
+  bottom: -12rem;
+  right: -6rem;
+  animation: float 10s ease-in-out infinite reverse;
+}
