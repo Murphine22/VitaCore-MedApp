@@ -1,7 +1,7 @@
 import { demoSeed } from './seedData.js';
 
-const STORAGE_KEY = 'vitacore_demo_db_v1';
-const COLLECTIONS = ['users', 'departments', 'doctors', 'patients', 'appointments', 'invoices'];
+const STORAGE_KEY = 'vitacore_demo_db_v2';
+const COLLECTIONS = ['users', 'departments', 'doctors', 'patients', 'appointments', 'invoices', 'prescriptions'];
 
 function load() {
   try {
@@ -50,6 +50,12 @@ function denormalize(db, collection, record) {
     if (patient) record.patientName = patient.name;
     computeInvoice(record);
   }
+  if (collection === 'prescriptions') {
+    const patient = db.patients.find((p) => p._id === record.patient);
+    const doctor = db.doctors.find((d) => d._id === record.doctor);
+    if (patient) record.patientName = patient.name;
+    if (doctor) record.doctorName = doctor.name;
+  }
   return record;
 }
 
@@ -65,6 +71,7 @@ const SEARCH_FIELDS = {
   departments: ['name', 'description', 'headDoctor', 'location'],
   appointments: ['patientName', 'doctorName', 'department', 'reason', 'status'],
   invoices: ['invoiceNo', 'patientName', 'status', 'method'],
+  prescriptions: ['patientName', 'doctorName', 'diagnosis', 'medications', 'status'],
 };
 
 export const demoDb = {
@@ -103,8 +110,14 @@ export const demoDb = {
   list(collection, params = {}) {
     const db = load();
     let rows = [...(db[collection] || [])];
-    const { search, status, sort = '-createdAt' } = params;
-    if (status) rows = rows.filter((r) => r.status === status);
+    // Mirror the server's crudController: pull out the special params and treat
+    // every remaining key as an exact-match filter so any CrudView filter works.
+    const { search, sort = '-createdAt', page, limit, ...filters } = params;
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        rows = rows.filter((r) => String(r[key]) === String(value));
+      }
+    });
     if (search) rows = rows.filter((r) => matchesSearch(r, search, SEARCH_FIELDS[collection] || []));
     if (sort) {
       const desc = sort.startsWith('-');
@@ -117,7 +130,13 @@ export const demoDb = {
         return 0;
       });
     }
-    return { success: true, count: rows.length, total: rows.length, data: rows };
+    const total = rows.length;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    if (!Number.isNaN(pageNum) && !Number.isNaN(limitNum)) {
+      rows = rows.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    }
+    return { success: true, count: rows.length, total, data: rows };
   },
 
   get(collection, id) {
@@ -166,6 +185,10 @@ export const demoDb = {
     db.appointments.forEach((a) => {
       byStatus[a.status] = (byStatus[a.status] || 0) + 1;
     });
+    const revByStatus = {};
+    db.invoices.forEach((inv) => {
+      revByStatus[inv.status] = (revByStatus[inv.status] || 0) + (inv.amount || 0);
+    });
     const byDept = {};
     db.appointments.forEach((a) => {
       const key = a.department || 'Unassigned';
@@ -191,13 +214,15 @@ export const demoDb = {
             (a) => new Date(a.date).toDateString() === today
           ).length,
           invoices: db.invoices.length,
+          prescriptions: db.prescriptions.length,
           revenue,
         },
         appointmentsByStatus: Object.entries(byStatus).map(([status, count]) => ({ status, count })),
-        appointmentsByDepartment: Object.entries(byDept).map(([department, count]) => ({
-          department,
-          count,
-        })),
+        revenueByStatus: Object.entries(revByStatus).map(([status, amount]) => ({ status, amount })),
+        appointmentsByDepartment: Object.entries(byDept)
+          .map(([department, count]) => ({ department, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 8),
         revenueTrend,
         recentAppointments: db.appointments.slice(0, 6),
       },

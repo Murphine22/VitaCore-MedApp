@@ -64,6 +64,15 @@ function MobileCard(r) {
 export default function Doctors() {
   const { data: departments = [] } = useList('departments');
 
+  const filters = [
+    { key: 'status', label: 'Statuses', options: statusOptions },
+    {
+      key: 'department',
+      label: 'Departments',
+      options: departments.map((d) => ({ value: d.name, label: d.name })),
+    },
+  ];
+
   const fields = [
     { name: 'name', label: 'Full name', required: true, placeholder: 'Dr. Jane Doe' },
     { name: 'specialty', label: 'Specialty', required: true, placeholder: 'Cardiologist' },
@@ -94,6 +103,7 @@ export default function Doctors() {
       addLabel="Add Doctor"
       searchPlaceholder="Search doctors…"
       renderMobile={MobileCard}
+      filters={filters}
     />
   );
 }

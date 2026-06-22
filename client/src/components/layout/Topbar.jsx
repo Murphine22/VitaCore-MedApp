@@ -3,6 +3,7 @@ import { Menu, Moon, Sun, Search, LogOut, Command } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore.js';
 import { useAuthStore } from '../../store/authStore.js';
 import Avatar from '../ui/Avatar.jsx';
+import NotificationsMenu from './NotificationsMenu.jsx';
 
 export default function Topbar() {
   const { toggleSidebar, theme, toggleTheme, setCommandOpen } = useUiStore();
@@ -42,6 +43,7 @@ export default function Topbar() {
         <button onClick={toggleTheme} className="btn-ghost rounded-lg p-2" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
+        <NotificationsMenu />
 
         <div className="mx-1 hidden h-8 w-px bg-ink-200 dark:bg-ink-800 sm:block" />
 

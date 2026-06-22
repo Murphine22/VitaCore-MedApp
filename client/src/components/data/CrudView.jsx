@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import PageHeader from './PageHeader.jsx';
 import SearchBar from './SearchBar.jsx';
@@ -6,9 +6,12 @@ import DataTable from './DataTable.jsx';
 import ResourceForm from './ResourceForm.jsx';
 import Modal from '../ui/Modal.jsx';
 import ConfirmDialog from '../ui/ConfirmDialog.jsx';
-import Spinner from '../ui/Spinner.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
-import { useList, useCreate, useUpdate, useRemove } from '../../hooks/useResource.js';
+import Pagination from '../ui/Pagination.jsx';
+import { TableSkeleton } from '../ui/Skeleton.jsx';
+import { usePagedList, useCreate, useUpdate, useRemove } from '../../hooks/useResource.js';
+
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function CrudView({
   resource,
@@ -22,19 +25,45 @@ export default function CrudView({
   emptyIcon,
   toFormValues,
   renderMobile,
+  filters = [],
+  pageSize = DEFAULT_PAGE_SIZE,
   extra,
 }) {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [filterValues, setFilterValues] = useState({});
   const [editing, setEditing] = useState(null); // null | {} (new) | record
   const [deleting, setDeleting] = useState(null);
 
-  const { data: rows = [], isLoading } = useList(resource, search ? { search } : {});
+  const activeFilters = useMemo(
+    () => Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)),
+    [filterValues]
+  );
+
+  // Reset to first page whenever the query narrows.
+  const filterKey = JSON.stringify(activeFilters);
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterKey]);
+
+  const params = {
+    ...(search ? { search } : {}),
+    ...activeFilters,
+    page,
+    limit: pageSize,
+  };
+
+  const { data, isLoading, isFetching } = usePagedList(resource, params);
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
+
   const createM = useCreate(resource);
   const updateM = useUpdate(resource);
   const removeM = useRemove(resource);
 
   const isNew = editing && !editing._id;
   const formId = `${resource}-form`;
+  const hasQuery = !!search || Object.keys(activeFilters).length > 0;
 
   const initialValues = useMemo(() => {
     if (!editing) return {};
@@ -75,25 +104,42 @@ export default function CrudView({
         }
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchBar value={search} onChange={setSearch} placeholder={searchPlaceholder} />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchBar value={search} onChange={setSearch} placeholder={searchPlaceholder} />
+          {filters.map((f) => (
+            <select
+              key={f.key}
+              className="input sm:w-44"
+              value={filterValues[f.key] || ''}
+              onChange={(e) => setFilterValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+            >
+              <option value="">{f.allLabel || `All ${f.label}`}</option>
+              {f.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          ))}
+        </div>
         <p className="text-sm text-ink-500">
-          {rows.length} {rows.length === 1 ? 'record' : 'records'}
+          {total} {total === 1 ? 'record' : 'records'}
         </p>
       </div>
 
       {extra}
 
       {isLoading ? (
-        <Spinner />
+        <TableSkeleton rows={pageSize} />
       ) : rows.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={emptyIcon || icon}
-            title={search ? 'No matches found' : `No ${title.toLowerCase()} yet`}
-            message={search ? 'Try a different search term.' : `Add your first record to get started.`}
+            title={hasQuery ? 'No matches found' : `No ${title.toLowerCase()} yet`}
+            message={hasQuery ? 'Try a different search or filter.' : `Add your first record to get started.`}
             action={
-              !search && (
+              !hasQuery && (
                 <button className="btn-primary" onClick={() => setEditing({})}>
                   <Plus className="h-4 w-4" /> {addLabel}
                 </button>
@@ -102,13 +148,16 @@ export default function CrudView({
           />
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          rows={rows}
-          onEdit={(row) => setEditing(row)}
-          onDelete={(row) => setDeleting(row)}
-          renderMobile={renderMobile}
-        />
+        <div className={isFetching ? 'opacity-60 transition' : 'transition'}>
+          <DataTable
+            columns={columns}
+            rows={rows}
+            onEdit={(row) => setEditing(row)}
+            onDelete={(row) => setDeleting(row)}
+            renderMobile={renderMobile}
+          />
+          <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+        </div>
       )}
 
       <Modal

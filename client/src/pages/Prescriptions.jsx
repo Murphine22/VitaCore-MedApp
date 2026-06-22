@@ -1,4 +1,4 @@
-import { CalendarDays } from 'lucide-react';
+import { Pill } from 'lucide-react';
 import CrudView from '../components/data/CrudView.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
@@ -6,11 +6,12 @@ import { formatDate } from '../lib/format.js';
 import { useList } from '../hooks/useResource.js';
 
 const statusOptions = [
-  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'active', label: 'Active' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
-  { value: 'no-show', label: 'No-show' },
 ];
+
+const filters = [{ key: 'status', label: 'Statuses', options: statusOptions }];
 
 const columns = [
   {
@@ -23,11 +24,10 @@ const columns = [
       </div>
     ),
   },
-  { key: 'doctorName', header: 'Doctor' },
-  { key: 'department', header: 'Department' },
+  { key: 'diagnosis', header: 'Diagnosis', render: (r) => r.diagnosis || '—' },
+  { key: 'medications', header: 'Medications', render: (r) => <span className="line-clamp-1 max-w-xs text-ink-500">{r.medications || '—'}</span> },
+  { key: 'doctorName', header: 'Prescribed by' },
   { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
-  { key: 'time', header: 'Time' },
-  { key: 'reason', header: 'Reason', render: (r) => <span className="text-ink-500">{r.reason || '—'}</span> },
   { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
 ];
 
@@ -40,26 +40,17 @@ function MobileCard(r) {
           <p className="truncate font-semibold">{r.patientName}</p>
           <StatusBadge status={r.status} />
         </div>
-        <p className="text-xs text-ink-500">{r.doctorName} · {r.department}</p>
-        <p className="text-xs text-ink-400">{formatDate(r.date)} · {r.time}</p>
+        <p className="truncate text-xs text-ink-500">{r.diagnosis || '—'}</p>
+        <p className="line-clamp-1 text-xs text-ink-400">{r.medications}</p>
+        <p className="text-xs text-ink-400">{r.doctorName} · {formatDate(r.date)}</p>
       </div>
     </div>
   );
 }
 
-export default function Appointments() {
+export default function Prescriptions() {
   const { data: patients = [] } = useList('patients');
   const { data: doctors = [] } = useList('doctors');
-  const { data: departments = [] } = useList('departments');
-
-  const filters = [
-    { key: 'status', label: 'Statuses', options: statusOptions },
-    {
-      key: 'department',
-      label: 'Departments',
-      options: departments.map((d) => ({ value: d.name, label: d.name })),
-    },
-  ];
 
   const fields = [
     {
@@ -72,29 +63,29 @@ export default function Appointments() {
     },
     {
       name: 'doctor',
-      label: 'Doctor',
+      label: 'Prescribing doctor',
       type: 'select',
       required: true,
       placeholder: 'Select doctor',
       options: doctors.map((d) => ({ value: d._id, label: `${d.name} · ${d.specialty}` })),
     },
-    { name: 'date', label: 'Date', type: 'date', required: true },
-    { name: 'time', label: 'Time', type: 'time' },
-    { name: 'status', label: 'Status', type: 'select', options: statusOptions, default: 'scheduled' },
-    { name: 'reason', label: 'Reason', placeholder: 'Routine check-up' },
+    { name: 'diagnosis', label: 'Diagnosis', placeholder: 'e.g. Hypertension' },
+    { name: 'date', label: 'Date', type: 'date' },
+    { name: 'status', label: 'Status', type: 'select', options: statusOptions, default: 'active' },
+    { name: 'medications', label: 'Medications', type: 'textarea', full: true, placeholder: 'Drug — dosage; Drug — dosage' },
     { name: 'notes', label: 'Notes', type: 'textarea', full: true },
   ];
 
   return (
     <CrudView
-      resource="appointments"
-      title="Appointments"
-      subtitle="Schedule and track patient appointments"
-      icon={CalendarDays}
+      resource="prescriptions"
+      title="Prescriptions"
+      subtitle="Issue and track medical prescriptions"
+      icon={Pill}
       columns={columns}
       fields={fields}
-      addLabel="Book Appointment"
-      searchPlaceholder="Search appointments…"
+      addLabel="New Prescription"
+      searchPlaceholder="Search prescriptions…"
       renderMobile={MobileCard}
       filters={filters}
       toFormValues={(r) => ({

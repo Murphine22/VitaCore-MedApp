@@ -6,6 +6,7 @@ import doctorRoutes from './doctorRoutes.js';
 import departmentRoutes from './departmentRoutes.js';
 import appointmentRoutes from './appointmentRoutes.js';
 import invoiceRoutes from './invoiceRoutes.js';
+import prescriptionRoutes from './prescriptionRoutes.js';
 import { getStats } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -24,6 +25,7 @@ router.use('/doctors', doctorRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/invoices', invoiceRoutes);
+router.use('/prescriptions', prescriptionRoutes);
 router.get('/dashboard/stats', protect, getStats);
 
 export default router;

@@ -1,4 +1,5 @@
-import { Users } from 'lucide-react';
+import { Users, ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import CrudView from '../components/data/CrudView.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
@@ -33,18 +34,31 @@ const fields = [
   { name: 'medicalHistory', label: 'Medical history', type: 'textarea', full: true },
 ];
 
+const filters = [
+  {
+    key: 'status',
+    label: 'Statuses',
+    options: statusOptions,
+  },
+  {
+    key: 'bloodGroup',
+    label: 'Blood Groups',
+    options: bloodOptions,
+  },
+];
+
 const columns = [
   {
     key: 'name',
     header: 'Patient',
     render: (r) => (
-      <div className="flex items-center gap-3">
+      <Link to={`/app/patients/${r._id}`} className="group flex items-center gap-3">
         <Avatar name={r.name} size="sm" />
         <div>
-          <p className="font-semibold">{r.name}</p>
+          <p className="font-semibold group-hover:text-brand-600">{r.name}</p>
           <p className="text-xs text-ink-500">{r.email || r.phone}</p>
         </div>
-      </div>
+      </Link>
     ),
   },
   { key: 'phone', header: 'Phone' },
@@ -52,11 +66,23 @@ const columns = [
   { key: 'dateOfBirth', header: 'Age', render: (r) => (r.dateOfBirth ? `${ageFromDob(r.dateOfBirth)} yrs` : '—') },
   { key: 'bloodGroup', header: 'Blood', render: (r) => <span className="font-semibold text-red-500">{r.bloodGroup}</span> },
   { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+  {
+    key: 'view',
+    header: '',
+    render: (r) => (
+      <Link
+        to={`/app/patients/${r._id}`}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline"
+      >
+        Profile <ArrowUpRight className="h-3.5 w-3.5" />
+      </Link>
+    ),
+  },
 ];
 
 function MobileCard(r) {
   return (
-    <div className="flex items-center gap-3">
+    <Link to={`/app/patients/${r._id}`} className="flex items-center gap-3">
       <Avatar name={r.name} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -68,7 +94,7 @@ function MobileCard(r) {
           {r.bloodGroup} · {r.dateOfBirth ? `${ageFromDob(r.dateOfBirth)} yrs · ${formatDate(r.dateOfBirth)}` : 'DOB —'}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -84,6 +110,7 @@ export default function Patients() {
       addLabel="Add Patient"
       searchPlaceholder="Search patients…"
       renderMobile={MobileCard}
+      filters={filters}
     />
   );
 }
