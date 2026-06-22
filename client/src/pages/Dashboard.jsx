@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowUpRight,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -19,6 +20,8 @@ import {
   BarChart,
   Bar,
   Cell,
+  PieChart,
+  Pie,
 } from 'recharts';
 import { useDashboardStats } from '../hooks/useResource.js';
 import { useAuthStore } from '../store/authStore.js';
@@ -29,6 +32,13 @@ import Avatar from '../components/ui/Avatar.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 
 const BAR_COLORS = ['#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#ec4899'];
+const STATUS_COLORS = {
+  scheduled: '#06b6d4',
+  completed: '#10b981',
+  cancelled: '#ef4444',
+  'no-show': '#f59e0b',
+};
+const REVENUE_COLORS = { paid: '#10b981', pending: '#f59e0b', overdue: '#ef4444' };
 
 function StatCard({ icon: Icon, label, value, accent, format, delay, trend }) {
   return (
@@ -63,7 +73,16 @@ export default function Dashboard() {
 
   if (isLoading || !data) return <Spinner label="Loading dashboard…" />;
 
-  const { totals, revenueTrend, appointmentsByDepartment, recentAppointments } = data;
+  const {
+    totals,
+    revenueTrend,
+    appointmentsByDepartment,
+    appointmentsByStatus = [],
+    revenueByStatus = [],
+    recentAppointments,
+  } = data;
+  const statusData = appointmentsByStatus.map((s) => ({ ...s, name: s.status }));
+  const totalAppts = appointmentsByStatus.reduce((s, x) => s + x.count, 0);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -152,6 +171,96 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.34 }}
+          className="card p-5"
+        >
+          <div className="mb-2">
+            <h3 className="font-display text-lg font-bold">Appointment Status</h3>
+            <p className="text-sm text-ink-500">Distribution across {totalAppts} visits</p>
+          </div>
+          {statusData.length === 0 ? (
+            <p className="py-10 text-center text-sm text-ink-500">No data yet</p>
+          ) : (
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    dataKey="count"
+                    nameKey="name"
+                    innerRadius={58}
+                    outerRadius={88}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {statusData.map((s) => (
+                      <Cell key={s.status} fill={STATUS_COLORS[s.status] || '#94a3b8'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #94a3b833', background: '#0f172a', color: '#fff' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-display text-2xl font-extrabold">{totalAppts}</span>
+                <span className="text-xs text-ink-500">total</span>
+              </div>
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500">
+            {statusData.map((s) => (
+              <span key={s.status} className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLORS[s.status] || '#94a3b8' }} />
+                <span className="capitalize">{s.status}</span> · {s.count}
+              </span>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="card p-5 lg:col-span-2"
+        >
+          <div className="mb-4">
+            <h3 className="font-display text-lg font-bold">Revenue Breakdown</h3>
+            <p className="text-sm text-ink-500">Invoiced amount by payment status</p>
+          </div>
+          {revenueByStatus.length === 0 ? (
+            <p className="py-10 text-center text-sm text-ink-500">No invoices yet</p>
+          ) : (
+            <div className="space-y-4">
+              {revenueByStatus.map((r) => {
+                const max = Math.max(...revenueByStatus.map((x) => x.amount), 1);
+                return (
+                  <div key={r.status}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="capitalize font-medium">{r.status}</span>
+                      <span className="font-semibold">{formatNaira(r.amount)}</span>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-ink-200/60 dark:bg-ink-800/60">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(r.amount / max) * 100}%` }}
+                        transition={{ duration: 0.6 }}
+                        className="h-full rounded-full"
+                        style={{ background: REVENUE_COLORS[r.status] || '#06b6d4' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -160,7 +269,9 @@ export default function Dashboard() {
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-bold">Recent Appointments</h3>
-          <ArrowUpRight className="h-5 w-5 text-ink-400" />
+          <Link to="/app/appointments" className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline">
+            View all <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </div>
         <div className="space-y-2">
           {recentAppointments.length === 0 && (

@@ -5,8 +5,11 @@ import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Patients from './pages/Patients.jsx';
+import PatientDetail from './pages/PatientDetail.jsx';
 import Doctors from './pages/Doctors.jsx';
 import Appointments from './pages/Appointments.jsx';
+import AppointmentCalendar from './pages/AppointmentCalendar.jsx';
+import Prescriptions from './pages/Prescriptions.jsx';
 import Departments from './pages/Departments.jsx';
 import Billing from './pages/Billing.jsx';
 import Settings from './pages/Settings.jsx';
@@ -27,8 +30,11 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="patients" element={<Patients />} />
+        <Route path="patients/:id" element={<PatientDetail />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="appointments" element={<Appointments />} />
+        <Route path="calendar" element={<AppointmentCalendar />} />
+        <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="departments" element={<Departments />} />
         <Route path="billing" element={<Billing />} />
         <Route path="settings" element={<Settings />} />

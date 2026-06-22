@@ -8,6 +8,7 @@ const labels = {
   departments: 'Department',
   appointments: 'Appointment',
   invoices: 'Invoice',
+  prescriptions: 'Prescription',
 };
 
 export function useList(resource, params = {}) {
@@ -15,6 +16,19 @@ export function useList(resource, params = {}) {
     queryKey: [resource, params],
     queryFn: () => dataService[resource].list(params),
     select: (res) => res.data,
+  });
+}
+
+export function usePagedList(resource, params = {}) {
+  return useQuery({
+    queryKey: [resource, params],
+    queryFn: () => dataService[resource].list(params),
+    select: (res) => ({
+      rows: res.data,
+      total: res.total ?? res.data.length,
+      count: res.count ?? res.data.length,
+    }),
+    placeholderData: (prev) => prev,
   });
 }
 

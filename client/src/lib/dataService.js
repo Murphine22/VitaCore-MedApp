@@ -87,6 +87,7 @@ export const dataService = {
   departments: resource('departments'),
   appointments: resource('appointments'),
   invoices: resource('invoices'),
+  prescriptions: resource('prescriptions'),
 
   dashboard: {
     async stats() {

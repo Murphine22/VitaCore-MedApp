@@ -4,6 +4,7 @@ import { Doctor } from '../models/Doctor.js';
 import { Appointment } from '../models/Appointment.js';
 import { Invoice } from '../models/Invoice.js';
 import { Department } from '../models/Department.js';
+import { Prescription } from '../models/Prescription.js';
 
 export const getStats = asyncHandler(async (req, res) => {
   const startOfMonth = new Date();
@@ -17,7 +18,9 @@ export const getStats = asyncHandler(async (req, res) => {
     appointmentsTotal,
     appointmentsToday,
     invoices,
+    prescriptions,
     revenueAgg,
+    revenueByStatusAgg,
     statusAgg,
     deptAgg,
     recentAppointments,
@@ -33,10 +36,12 @@ export const getStats = asyncHandler(async (req, res) => {
       },
     }),
     Invoice.countDocuments(),
+    Prescription.countDocuments(),
     Invoice.aggregate([
       { $match: { status: 'paid' } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
+    Invoice.aggregate([{ $group: { _id: '$status', amount: { $sum: '$amount' } } }]),
     Appointment.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Appointment.aggregate([
       { $group: { _id: '$department', count: { $sum: 1 } } },
@@ -71,9 +76,11 @@ export const getStats = asyncHandler(async (req, res) => {
         appointments: appointmentsTotal,
         appointmentsToday,
         invoices,
+        prescriptions,
         revenue: revenueAgg[0]?.total || 0,
       },
       appointmentsByStatus: statusAgg.map((s) => ({ status: s._id, count: s.count })),
+      revenueByStatus: revenueByStatusAgg.map((r) => ({ status: r._id, amount: r.amount })),
       appointmentsByDepartment: deptAgg.map((d) => ({
         department: d._id || 'Unassigned',
         count: d.count,
