@@ -110,11 +110,14 @@ export const demoDb = {
   list(collection, params = {}) {
     const db = load();
     let rows = [...(db[collection] || [])];
-    const { search, status, department, patient, doctor, sort = '-createdAt', page, limit } = params;
-    if (status) rows = rows.filter((r) => r.status === status);
-    if (department) rows = rows.filter((r) => r.department === department);
-    if (patient) rows = rows.filter((r) => r.patient === patient);
-    if (doctor) rows = rows.filter((r) => r.doctor === doctor);
+    // Mirror the server's crudController: pull out the special params and treat
+    // every remaining key as an exact-match filter so any CrudView filter works.
+    const { search, sort = '-createdAt', page, limit, ...filters } = params;
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        rows = rows.filter((r) => String(r[key]) === String(value));
+      }
+    });
     if (search) rows = rows.filter((r) => matchesSearch(r, search, SEARCH_FIELDS[collection] || []));
     if (sort) {
       const desc = sort.startsWith('-');
